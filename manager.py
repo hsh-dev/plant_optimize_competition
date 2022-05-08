@@ -22,7 +22,8 @@ class Manager():
         self.datamanager = datamanager
         self.logs = {}
         self.enable_log = enable_log
-        
+        self.scheduler = None
+
         # initialize
         self.init_optimizer()
         self.init_data_loader()
@@ -36,8 +37,12 @@ class Manager():
         self.test_loader = self.datamanager.get_dataloader('test')
     
     def init_optimizer(self):
-        self.optimizer = torch.optim.SGD(
-            params=self.model.parameters(), lr=self.config["LEARNING_RATE"])
+        # self.optimizer = torch.optim.SGD(
+        #     params=self.model.parameters(), lr=self.config["LEARNING_RATE"])
+        self.optimizer = torch.optim.Adam(params = self.model.parameters(),
+            lr = self.config["LEARNING_RATE"], betas=(0.99, 0.999))
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max= 20, eta_min = self.config["MIN_LEARNING_RATE"])
+
 
     def init_loss(self):
         self.criterion = nn.L1Loss().to(self.device)
@@ -45,22 +50,26 @@ class Manager():
     def init_callback(self, callback):
         self.neptune_callback = NeptuneCallback(callback)
 
+    def init_empty_data_remove(self):
+        self.datamanager.init_dataset(empty_remove = True)
+        self.train_loader = self.datamanager.get_dataloader('train')
+        self.valid_loader = self.datamanager.get_dataloader('valid')
+        self.test_loader = self.datamanager.get_dataloader('test')
     
+
     def train(self, stop_epochs = None):
         self.model.to(self.device)
-        scheduler = None
-        
         best_mae = 9999
         
         epochs = self.config["EPOCHS"]
         if stop_epochs is not None:
             epochs = stop_epochs            
         
-        
         for epoch in range(1,epochs+1):
-            if scheduler is not None:
-                scheduler.step()
-            
+            # if epoch == 100:
+            #     self.init_empty_data_remove()
+            #     print("Empty Data Removed!!")
+
             # Train Loop
             self.train_loop()
             
@@ -79,7 +88,10 @@ class Manager():
             if best_mae > self.logs["valid_mae"]:
                 best_mae = self.logs["valid_mae"]
                 self.save_best_model(epoch)
-    
+
+            # Update LR    
+            if self.scheduler is not None:
+                self.scheduler.step()
     
     def train_loop(self):
         self.model.train()
@@ -109,11 +121,14 @@ class Manager():
             
             tmp_train_loss.append(loss.item())
             total_train_loss.append(loss.item())
-            error = np.abs(logit.squeeze(1).detach().numpy()- label.detach().numpy())
+            
+            logit_ = logit.cpu()
+            label_ = label.cpu()
+            error = np.abs(logit_.squeeze(1).detach().numpy()- label_.detach().numpy())
             tmp_error_list.extend(error)
-            tmp_true_list.extend(np.abs(label.detach().numpy()))
+            tmp_true_list.extend(np.abs(label_.detach().numpy()))
             total_error_list.extend(error)
-            total_true_list.extend(np.abs(label.detach().numpy()))
+            total_true_list.extend(np.abs(label_.detach().numpy()))
             
             if step % 2 == 0:
                 print("[STEP : ({}/{}) | TRAIN LOSS : {} | TRAIN SCORE : {} | Time : {}]".format(step,
@@ -157,12 +172,14 @@ class Manager():
                 tmp_valid_loss.append(loss.item())
                 total_valid_loss.append(loss.item())
 
-                error = np.abs(logit.squeeze(1).detach().numpy() -
-                           label.detach().numpy())
+                logit_ = logit.cpu()
+                label_ = label.cpu()
+                error = np.abs(logit_.squeeze(1).detach().numpy() -
+                           label_.detach().numpy())
                 tmp_error_list.extend(error)
-                tmp_true_list.extend(np.abs(label.detach().numpy()))
+                tmp_true_list.extend(np.abs(label_.detach().numpy()))
                 total_error_list.extend(error)
-                total_true_list.extend(np.abs(label.detach().numpy()))
+                total_true_list.extend(np.abs(label_.detach().numpy()))
                 
                 if step % 2 == 0:
                     print("[STEP : ({}/{}) | VALID LOSS : {} | VALID SCORE : {} | Time : {}]".format(step,

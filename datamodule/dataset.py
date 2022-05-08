@@ -30,12 +30,12 @@ class CustomDataset(Dataset):
         # min_data = meta_data.min(axis=0, skipna=True)
         
         # print(meta_path + " asserting")
-        is_nan = True
-        for data in mean_data:
-            if not np.isnan(data):
-                is_nan = False
-        if is_nan:
-            print(meta_path + "is all nan")
+        # is_nan = True
+        # for data in mean_data:
+        #     if not np.isnan(data):
+        #         is_nan = False
+        # if is_nan:
+        #     print(meta_path + "is all nan")
                         
 
         

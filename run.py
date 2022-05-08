@@ -8,13 +8,15 @@ import neptune.new as neptune
 from model.baseline import CNNRegressor
 from manager import Manager
 from datamodule.data_controller import DataController
+from model.resnet import ResNet101
 
 CFG = {
     'IMG_SIZE': 128,
-    'EPOCHS': 10,
-    'LEARNING_RATE': 2e-3,
-    'BATCH_SIZE': 16,
-    'VALID_BATCH_SIZE': 1,
+    'EPOCHS': 300,
+    'LEARNING_RATE': 1e-3,
+    'MIN_LEARNING_RATE': 1e-4,
+    'BATCH_SIZE': 64,
+    'VALID_BATCH_SIZE': 64,
     'TEST_BATCH_SIZE' : 1,
     'SEED': 41,
     'trainpath': './dataset/train',
@@ -75,7 +77,9 @@ if __name__ == '__main__':
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     
     print("--- MODEL INIT ---")
-    neural_engine  = CNNRegressor()    
+    # neural_engine  = CNNRegressor()
+    neural_engine = ResNet101()
+
     data_manager = DataController(CFG)
 
     print("--- MANAGER INIT ---")

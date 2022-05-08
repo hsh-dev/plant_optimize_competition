@@ -14,14 +14,14 @@ class DataController():
     def __init__ (self, config):
         self.config = config
     
-        self.init_dataset()
+        self.init_dataset(False)
 
         self.train_loader = self.get_dataloader('train')
         self.valid_loader = self.get_dataloader('valid')
         self.test_loader = self.get_dataloader('test')
 
-    def init_dataset(self):
-        all_img_path, all_meta_path, all_label = self.get_train_data(self.config['trainpath'])
+    def init_dataset(self, empty_remove = False):
+        all_img_path, all_meta_path, all_label = self.get_train_data(self.config['trainpath'], empty_remove)
         self.test_img_path, self.test_meta_path = self.get_test_data(self.config['testpath'])
 
         assert (len(all_img_path) == len(all_meta_path) and len(all_meta_path) == len(all_label)), "length different!"
@@ -79,7 +79,7 @@ class DataController():
             return test_loader
             
 
-    def get_train_data(self, data_dir):
+    def get_train_data(self, data_dir, empty_remove = False):
         img_path_list = []
         label_list = []
         meta_path_list = []
@@ -87,7 +87,7 @@ class DataController():
         for case_name in os.listdir(data_dir):
             current_path = os.path.join(data_dir, case_name)
             
-            if case_name in self.config['empty_data']:
+            if empty_remove and (case_name in self.config['empty_data']):
                 print("{} has empty meta data".format(case_name))
                 continue
             
@@ -111,7 +111,7 @@ class DataController():
                 
                 for idx, image_name in enumerate(tmp_img_path_list):
                     name_sliced = image_name.split('/')[-1].split('.')[0]
-                    if name_sliced in self.config['empty_data_subject']:
+                    if empty_remove and (name_sliced in self.config['empty_data_subject']):
                         print("{} has empty meta data".format(name_sliced))
                         remove_idx.append(idx)
                 
