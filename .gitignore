@@ -4,3 +4,4 @@ result.csv
 *pycache*
 [Baseline]_Simple CNN.ipynb
 .DS_Store
+.neptune
