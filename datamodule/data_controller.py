@@ -86,17 +86,40 @@ class DataController():
 
         for case_name in os.listdir(data_dir):
             current_path = os.path.join(data_dir, case_name)
+            
+            if case_name in self.config['empty_data']:
+                print("{} has empty meta data".format(case_name))
+                continue
+            
             if os.path.isdir(current_path):
                 # get image path
                 tmp_img_path_list = []
                 tmp_meta_path_list = []
-
+                tmp_label_list = []
+                
                 tmp_img_path_list.extend(
                     glob(os.path.join(current_path, 'image', '*.jpg')))
                 tmp_img_path_list.extend(
                     glob(os.path.join(current_path, 'image', '*.png')))
                 tmp_img_path_list.sort()
+                
+                # get label
+                label_df = pd.read_csv(current_path+'/label.csv')
+                tmp_label_list.extend(label_df['leaf_weight'])
+                
+                remove_idx = []
+                
+                for idx, image_name in enumerate(tmp_img_path_list):
+                    name_sliced = image_name.split('/')[-1].split('.')[0]
+                    if name_sliced in self.config['empty_data_subject']:
+                        print("{} has empty meta data".format(name_sliced))
+                        remove_idx.append(idx)
+                
+                # remove subject
+                tmp_img_path_list = [ele for idx, ele in enumerate(tmp_img_path_list) if idx not in remove_idx]
+                tmp_label_list = [ele for idx, ele in enumerate(tmp_label_list) if idx not in remove_idx]
 
+                
                 # get meta path
                 for img_path in tmp_img_path_list:
                     meta_path = img_path.replace('image', 'meta')
@@ -106,14 +129,9 @@ class DataController():
                     assert os.path.isfile(meta_path), str("PATH : " + meta_path + " is wrong!")
                     tmp_meta_path_list.append(meta_path)
                 
-
-                # get label
-                label_df = pd.read_csv(current_path+'/label.csv')
-                label_list.extend(label_df['leaf_weight'])
-
                 img_path_list.extend(tmp_img_path_list)
                 meta_path_list.extend(tmp_meta_path_list)
-
+                label_list.extend(tmp_label_list)
 
         return img_path_list, meta_path_list, label_list
 
