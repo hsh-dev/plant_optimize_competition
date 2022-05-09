@@ -15,3 +15,6 @@ class NeptuneCallback():
             
         if logs.get("valid_score") is not None:
             self.neptune["valid/Score"].log(logs["valid_score"])
+        
+        if logs.get("learning_rate") is not None:
+            self.neptune["train/LR"].log(logs["learning_rate"])

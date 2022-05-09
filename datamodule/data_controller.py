@@ -26,7 +26,7 @@ class DataController():
 
         assert (len(all_img_path) == len(all_meta_path) and len(all_meta_path) == len(all_label)), "length different!"
         self.all_data_length = len(all_img_path)
-        train_length = int(self.all_data_length * 0.8)
+        train_length = int(self.all_data_length * 0.85)
 
         all_img_path, all_meta_path, all_label  = self.random_shuffle(all_img_path, all_meta_path, all_label)
 

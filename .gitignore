@@ -1,6 +1,6 @@
 dataset
 saved
-result.csv
+*.csv
 *pycache*
 [Baseline]_Simple CNN.ipynb
 .DS_Store
