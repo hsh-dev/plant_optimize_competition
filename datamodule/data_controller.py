@@ -1,9 +1,6 @@
 import os
 from glob import glob
-from sys import meta_path
-from idna import valid_label_length
 import pandas as pd
-from torch import _test_serialization_subcmul
 from datamodule.dataset import CustomDataset
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
@@ -11,16 +8,19 @@ import numpy as np
 import random
 
 class DataController():
-    def __init__ (self, config):
+    def __init__ (self, config, calib_mode = False):
         self.config = config
-    
-        self.init_dataset(False)
+        self.calib_mode = calib_mode
+        self.init_dataset(self.calib_mode)
 
         self.train_loader = self.get_dataloader('train')
         self.valid_loader = self.get_dataloader('valid')
         self.test_loader = self.get_dataloader('test')
 
     def init_dataset(self, empty_remove = False):
+        if empty_remove:
+            self.calib_mode = True
+
         all_img_path, all_meta_path, all_label = self.get_train_data(self.config['trainpath'], empty_remove)
         self.test_img_path, self.test_meta_path = self.get_test_data(self.config['testpath'])
 
@@ -66,15 +66,15 @@ class DataController():
                     ])        
         
         if type == 'train':
-            train_dataset = CustomDataset(self.train_img_path, self.train_meta_path, self.train_label, train_mode=True, transforms=train_transform)
+            train_dataset = CustomDataset(self.train_img_path, self.train_meta_path, self.train_label, train_mode=True, transforms=train_transform, calib_mode = self.calib_mode)
             train_loader = DataLoader(train_dataset, batch_size = self.config['BATCH_SIZE'], shuffle=True, num_workers=0)
             return train_loader
         elif type == 'valid':
-            valid_dataset = CustomDataset(self.valid_img_path, self.valid_meta_path, self.valid_label, train_mode=True, transforms=test_transform)
+            valid_dataset = CustomDataset(self.valid_img_path, self.valid_meta_path, self.valid_label, train_mode=True, transforms=test_transform, calib_mode = self.calib_mode)
             valid_loader = DataLoader(valid_dataset, batch_size = self.config['VALID_BATCH_SIZE'], shuffle=False, num_workers=0)
             return valid_loader
         else:
-            test_dataset = CustomDataset(self.test_img_path, self.test_meta_path, None, train_mode=False, transforms=test_transform)
+            test_dataset = CustomDataset(self.test_img_path, self.test_meta_path, None, train_mode=False, transforms=test_transform, calib_mode = self.calib_mode)
             test_loader = DataLoader(test_dataset, batch_size = self.config['TEST_BATCH_SIZE'], shuffle=False, num_workers=0)
             return test_loader
             

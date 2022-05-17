@@ -10,11 +10,22 @@ if __name__ == '__main__':
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     
     ## chage name!
-    model_name = 'res101_test'
-    neural_engine  = torch.load('./output/' + str(model_name) + '/model_220.pth')
-    data_manager = DataController(CFG)
-    manager = Manager(neural_engine, data_manager, CFG, device)
+    
+    model_name = 'resnet_50_lr_test'
+    # model = torch.load('./output/' + str(model_name) + '/best_model.pth')
+    # tail = torch.load('./output/' + str(model_name) + '/best_tail.pth' )
+    # calib_head = torch.load('./output/' + str(model_name) + '/best_calib_head.pth')
 
+    model  = torch.load('./output/' + str(model_name) + '/model_' + '260.pth')
+    tail = torch.load('./output/' + str(model_name) + '/tail_' + '260.pth')
+    calib_head = torch.load('./output' + str(model_name) + '/calib_head_' + '260.pth')
+    data_manager = DataController(CFG)
+
+    # if using calib data
+    # data_manager = DataController(CFG, True)
+
+    manager = Manager(model, tail, data_manager, CFG, device, calib_head)
+    
     preds = manager.predict()
     
     submission = pd.read_csv('./dataset/sample_submission.csv')

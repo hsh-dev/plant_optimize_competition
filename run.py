@@ -9,7 +9,7 @@ from model.baseline import CNNRegressor
 from manager import Manager
 from datamodule.data_controller import DataController
 from model.resnet import ResNet101, ResNet50, ResNetTail
-from model.calibration import CalibrationHead, CalibrationTail
+from model.calibration import CalibHead, CalibTail
 from config import CFG
 
 def seed_everything(seed):
@@ -59,17 +59,20 @@ if __name__ == '__main__':
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     
     print("--- MODEL INIT ---")
-    # neural_engine  = CNNRegressor()
     main_net = ResNet50()
     main_tail = ResNetTail()
+    calib_head = CalibHead()
+    # calib_tail = CalibTail()
 
-    calib_head = CalibrationHead
-    calib_tail = CalibrationTail
+    # Fine Tuning Method
+    # model_name = 'resnet_50_lr_test'
+    # main_net  = torch.load('./output/' + str(model_name) + '/best_model.pth')
+    # main_tail = torch.load('./output/' + str(model_name) + '/best_tail.pth')
 
     data_manager = DataController(CFG)
 
     print("--- MANAGER INIT ---")
-    train_manager = Manager(main_net, main_tail, data_manager, CFG, device, args.enable_log, neptune_callback)
+    train_manager = Manager(main_net, main_tail, data_manager, CFG, device, args.enable_log, neptune_callback, calib_head)
     
     print("--- TRAIN START ---")
     train_manager.train()
