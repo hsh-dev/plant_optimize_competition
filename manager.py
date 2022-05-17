@@ -68,7 +68,7 @@ class Manager():
             self.calib_optimizer = torch.optim.Adam([
                 {'params' : self.calib_head.parameters()}],
                 lr = self.config["CALIB_LEARNING_RATE"], betas=(0.99, 0.999))
-            self.calib_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.calib_optimizer, T_max= 100, eta_min = self.config["MIN_LEARNING_RATE"])
+            self.calib_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.calib_optimizer, T_max= 20, eta_min = self.config["MIN_LEARNING_RATE"])
 
 
     def init_loss(self):
@@ -134,7 +134,7 @@ class Manager():
                 self.scheduler.step(epoch)
             
             if self.calib_mode_on:
-                if epoch < 100:
+                if epoch < 400:
                     self.calib_scheduler.step()
 
             # Update Train/Valid
@@ -354,29 +354,40 @@ class Manager():
     def predict(self):
         self.model.to(self.device)
         self.tail.to(self.device)
-        self.calib_head.to(self.device)
-
         self.model.eval()
         self.tail.eval()
-        self.calib_head.eval()
+
+        if self.use_calib:
+            self.calib_head.to(self.device)
+            self.calib_head.eval()
 
         model_pred = []
         with torch.no_grad():
-            for img, meta in iter(self.test_loader):
-                img, meta = img.float().to(self.device), meta.float().to(self.device)
+            if not self.use_calib:
+                for img in iter(self.test_loader):
+                    img = img.float().to(self.device)
 
-                model_output = self.model(img)
-                tail_output = self.tail(model_output)                    
-                tail_output = torch.log(tail_output + 1)
-                tail_output = torch.sigmoid(tail_output - 2)
+                    model_output = self.model(img)
+                    tail_output = self.tail(model_output)                    
+                    
+                    logit = tail_output
+                    pred_logit = logit.squeeze(1).detach().cpu()
 
-                calib_input = torch.cat((tail_output, meta), dim = 1)
-                logit = self.calib_head(calib_input)
+                    model_pred.extend(pred_logit.tolist())
+            else:
+                for img, meta in iter(self.test_loader):
+                    img, meta = img.float().to(self.device), meta.float().to(self.device)
 
-                pred_logit = logit.squeeze(1).detach().cpu()
+                    model_output = self.model(img)
+                    tail_output = self.tail(model_output)                    
+                    tail_output = torch.log(tail_output + 1)
+                    tail_output = torch.sigmoid(tail_output - 2)
 
-                model_pred.extend(pred_logit.tolist())
-                
+                    calib_input = torch.cat((tail_output, meta), dim = 1)
+                    logit = self.calib_head(calib_input)
+                    pred_logit = logit.squeeze(1).detach().cpu()
+
+                    model_pred.extend(pred_logit.tolist())
         return model_pred
 
     def save_model(self, epoch):
